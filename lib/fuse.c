@@ -1104,6 +1104,9 @@ static void unlock_path(struct fuse *f, fuse_ino_t nodeid, struct node *wnode,
 	if (wnode) {
 		assert(wnode->treelock == TREELOCK_WRITE);
 		wnode->treelock = 0;
+
+		if (f->conf.debug)
+			fuse_log(FUSE_LOG_DEBUG, "TREELOCK: unlock_path: node %llu, set wnode lock count to %d\n", (unsigned long long) wnode->nodeid, wnode->treelock);
 	}
 
 	for (node = get_node(f, nodeid);
@@ -1111,9 +1114,19 @@ static void unlock_path(struct fuse *f, fuse_ino_t nodeid, struct node *wnode,
 		assert(node->treelock != 0);
 		assert(node->treelock != TREELOCK_WAIT_OFFSET);
 		assert(node->treelock != TREELOCK_WRITE);
+		
 		node->treelock--;
+
+		if (f->conf.debug)
+			fuse_log(FUSE_LOG_DEBUG, "TREELOCK: unlock_path: node %llu, decremented lock count to %d\n", (unsigned long long) node->nodeid, node->treelock);
+
 		if (node->treelock == TREELOCK_WAIT_OFFSET)
+		{
 			node->treelock = 0;
+
+			if (f->conf.debug)
+				fuse_log(FUSE_LOG_DEBUG, "TREELOCK: unlock_path: node %llu, set node lock count to %d\n", (unsigned long long) node->nodeid, node->treelock);
+		}
 	}
 }
 
@@ -1150,11 +1163,20 @@ static int try_get_path(struct fuse *f, fuse_ino_t nodeid, const char *name,
 		if (wnode) {
 			if (wnode->treelock != 0) {
 				if (wnode->treelock > 0)
+				{
 					wnode->treelock += TREELOCK_WAIT_OFFSET;
+
+					if (f->conf.debug)
+						fuse_log(FUSE_LOG_DEBUG, "TREELOCK: try_get_path: wnode %llu, added wait offset to wnode lock count - %d\n", (unsigned long long) wnode->nodeid, wnode->treelock);
+				}
+
 				err = -EAGAIN;
 				goto out_free;
 			}
 			wnode->treelock = TREELOCK_WRITE;
+
+			if (f->conf.debug)
+				fuse_log(FUSE_LOG_DEBUG, "TREELOCK: try_get_path: wnode %llu, set wnode lock count to %d (write)\n", (unsigned long long) wnode->nodeid, wnode->treelock);
 		}
 	}
 
@@ -1175,6 +1197,9 @@ static int try_get_path(struct fuse *f, fuse_ino_t nodeid, const char *name,
 				goto out_unlock;
 
 			node->treelock++;
+								
+			if (f->conf.debug)
+				fuse_log(FUSE_LOG_DEBUG, "TREELOCK: try_get_path: node %llu, incremented node lock count to %d\n", (unsigned long long) node->nodeid, node->treelock);
 		}
 	}
 
