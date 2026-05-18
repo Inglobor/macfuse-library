@@ -5755,13 +5755,21 @@ static void fuse_lib_monitor(fuse_req_t req, fuse_ino_t ino, uint32_t flags)
 	char *path;
 	int err;
 
+	if (f->fs->debug)
+	{
+		fuse_log(FUSE_LOG_INFO, "fuse: monitor: flags: %x\n", flags);
+	}
+
 	err = get_path(f, ino, &path);
+
 	if (err) {
 		fuse_reply_none(req);
 		return;
 	}
 
 	fuse_fs_monitor(f->fs, path, flags);
+	free_path(f, ino, path);
+
 	fuse_reply_none(req);
 }
 #endif
