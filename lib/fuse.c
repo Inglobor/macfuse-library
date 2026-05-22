@@ -5764,7 +5764,6 @@ static void fuse_lib_monitor(fuse_req_t req, fuse_ino_t ino, uint32_t flags)
 
 	if (err)
 	{
-		free_path(f, ino, path);
 		fuse_reply_none(req);
 
 		return;
