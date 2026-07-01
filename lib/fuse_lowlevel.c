@@ -320,6 +320,50 @@ static int fuse_write_msg_dev(struct fuse_session *se, struct fuse_chan *ch,
 	return 0;
 }
 
+static char GetByteOrDefault(const char *ptr, int offset, int length)
+{
+	if (offset >= length)
+	{
+		return 0;
+	}
+	else
+	{
+		return *(ptr + offset);
+	}
+}
+
+static void fuse_log_iovec(const struct iovec *iov, int count)
+{
+	for (int index = 0; index < count; ++index)
+	{
+		fuse_log(FUSE_LOG_DEBUG, "    [IOVEC] %d/%d - %d bytes", index + 1, count, iov[index].iov_len);
+
+		int toPrint = iov[index].iov_len > 256 ? 256 : iov[index].iov_len;
+
+		for (int offset = 0; offset < toPrint; offset += 16)
+		{
+			fuse_log(FUSE_LOG_DEBUG, "    > %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d ", 
+				GetByteOrDefault(iov[index].iov_base, offset + 0, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 1, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 2, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 3, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 4, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 5, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 6, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 7, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 8, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 9, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 10, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 11, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 12, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 13, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 14, iov[index].iov_len),
+				GetByteOrDefault(iov[index].iov_base, offset + 15, iov[index].iov_len),
+			);
+		}
+	}
+}
+
 static int fuse_send_msg(struct fuse_session *se, struct fuse_chan *ch,
 			 struct iovec *iov, int count, fuse_req_t req)
 {
@@ -340,10 +384,12 @@ static int fuse_send_msg(struct fuse_session *se, struct fuse_chan *ch,
 				"   unique: %llu, error: %i (%s), outsize: %i\n",
 				(unsigned long long) out->unique, out->error,
 				strerror(-out->error), out->len);
+			fuce_log_iovec(iov, count);
 		} else {
 			fuse_log(FUSE_LOG_DEBUG,
 				"   unique: %llu, success, outsize: %i\n",
 				(unsigned long long) out->unique, out->len);
+			fuce_log_iovec(iov, count);
 		}
 	}
 
